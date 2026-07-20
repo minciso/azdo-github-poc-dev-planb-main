@@ -1,4 +1,2 @@
-test planB
-
 email
 username
