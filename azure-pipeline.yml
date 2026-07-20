@@ -2,7 +2,7 @@ trigger:
   - none
 
 pool:
-  vmImage: windows-latest
+  vmImage: ubuntu-latest
 
 resources:
   repositories:
@@ -31,24 +31,23 @@ stages:
             displayName: 'Sync and Push to GitHub'
             inputs:
               script: |
-                cd $(Pipeline.Workspace)\s\github-target
+                cd $(Pipeline.Workspace)/s/github-target
 
                 git config user.email "minciso15@gmail.com"
                 git config user.name "minciso"
 
-                git checkout -b $(Build.SourceBranchName)
+                git checkout -b sync-$(Build.SourceBranchName)
 
-                REM --- Copy files from ADO repo into GitHub repo ---
-                xcopy /E /Y /I "$(Pipeline.Workspace)\s\ado-source\*" "."
+                # Copy files from ADO repo into GitHub repo
+                cp -r $(Pipeline.Workspace)/s/ado-source/* .
 
                 git add --all
 
-                REM --- Idempotency check: only commit and push if changes exist ---
-                git diff --staged --quiet
-                IF %ERRORLEVEL% NEQ 0 (
-                  echo Changes detected, committing and pushing...
-                  git commit -m "branch to main - $(Build.BuildNumber)"
+                # Idempotency check: only commit and push if changes exist
+                if ! git diff --staged --quiet; then
+                  echo "Changes detected, committing and pushing..."
+                  git commit -m "Sync from Azure DevOps - $(Build.BuildNumber)"
                   git push --force origin HEAD:main
-                ) ELSE (
-                  echo No changes detected, repos are already in sync.
-                )
+                else
+                  echo "No changes detected, repos are already in sync."
+                fi
